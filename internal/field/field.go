@@ -7,6 +7,7 @@ var ErrFieldIncorrectShipsPositions = errors.New("incorrect ships positions")
 var ErrIncorrectShipsNumber = errors.New("incorrect ships number")
 var ErrFieldTooManyShips = errors.New("too many ships")
 var ErrFieldNotEnoughShips = errors.New("not enough ships")
+var ErrOutOfBounds = errors.New("incorrect index")
 
 const numSheep1SellSize = 4
 const numSheep2SellSize = 3
@@ -14,11 +15,11 @@ const numSheep3SellSize = 2
 const numSheep4SellSize = 1
 const fleetSize = 4*numSheep4SellSize + 3*numSheep3SellSize + 2*numSheep2SellSize + 1*numSheep1SellSize
 
-func CheckField(field []int) error {
-	if len(field) != 100 {
-		return ErrFieldStructError
-	}
+type FieldImpl interface {
+	GetAt(i, j int) (int, error)
+}
 
+func CheckField(field FieldImpl) error {
 	shipSizes := make(map[int]int)
 	totalFleetSize := 0
 	checkedSells := make([]int, 100)
@@ -69,7 +70,7 @@ func CheckField(field []int) error {
 	return nil
 }
 
-func checkSells(field []int, checkedSells []int, i, j int, ijUpdater func(int, int) (int, int)) (int, bool) {
+func checkSells(field FieldImpl, checkedSells []int, i, j int, ijUpdater func(int, int) (int, int)) (int, bool) {
 	if checkSell(field, checkedSells, i, j) == 0 {
 		return 0, true
 	}
@@ -87,8 +88,9 @@ func checkSells(field []int, checkedSells []int, i, j int, ijUpdater func(int, i
 	return count + 1, res
 }
 
-func checkSell(field []int, checkedSells []int, i, j int) int {
-	if i < 0 || j < 0 || i > 9 || j > 9 {
+func checkSell(field FieldImpl, checkedSells []int, i, j int) int {
+	res, err := field.GetAt(i, j)
+	if err != nil {
 		return 0
 	}
 
@@ -100,7 +102,7 @@ func checkSell(field []int, checkedSells []int, i, j int) int {
 		checkedSells[i*10+j] = 1
 	}()
 
-	if field[i*10+j] == 0 {
+	if res == 0 {
 		return 0
 	}
 
